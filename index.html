@@ -49,14 +49,14 @@
       <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="20" color="#7BC8A4" shadow="receive: true"></a-plane>
 
         <!-- Lighting -->
-        <a-light type="ambient" color="#222"></a-light>
+        <a-light type="ambient" color="#7a7a84"></a-light>
 
         <!-- Spotlight positioned above the Friendopede and aimed at it -->
         <!-- friendopede entity below uses id "friendopedeEntity" so the light can target it -->
         <a-entity
           id="friendopedeLight"
           position="1 2 -4"
-          light="type: spot; color: #ffffff; intensity: 2; distance: 5; angle: 35; penumbra: 0.4; decay: 2; castShadow: true"
+          light="type: spot; color: #ffffff; intensity: 2; distance: 3; angle: 35; penumbra: 0.5; decay: 0.5; castShadow: true"
           look-at="#friendopedeEntity">
         </a-entity>
 
