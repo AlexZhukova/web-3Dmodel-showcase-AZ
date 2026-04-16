@@ -5,16 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Alexandra Zhukova 3D Model Showcase</title>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
-    <!-- Optional extras for teleport + interactions -->
     <script src="https://unpkg.com/aframe-teleport-controls@4.0.1/dist/aframe-teleport-controls.min.js"></script>
     <script src="https://unpkg.com/super-hands@^3.0.0/dist/super-hands.min.js"></script>
-    <!-- Adds movement-controls (gamepad/thumbstick locomotion) -->
     <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
-    <!-- Adds movement-controls (gamepad/thumbstick locomotion) -->
-    <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
-    <!-- Adds movement-controls (gamepad/thumbstick locomotion) -->
-    <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
-        
+
     <style>
       /* Enter VR UI button */
       #enterVrBtn {
@@ -33,12 +27,35 @@
         display: none; /* hidden until we check support */
       }
       #enterVrBtn:active { transform: translateY(1px); }
+
+      /* simple UI for adjusting light (desktop) */
+      .light-controls {
+        position: fixed;
+        left: 16px;
+        bottom: 16px;
+        z-index: 9999;
+        background: rgba(255,255,255,0.9);
+        padding: 8px;
+        border-radius: 6px;
+        font-family: sans-serif;
+        font-size: 13px;
+      }
+      .light-controls label { display:block; margin:6px 0 2px; }
     </style>
   </head>
   <body>
     <button id="enterVrBtn" aria-pressed="false">Enter VR</button>
 
-    <a-scene>
+    <!-- Optional small UI to tweak spotlight at runtime -->
+    <div class="light-controls" aria-hidden="false">
+      <label for="spotIntensity">Spot intensity</label>
+      <input id="spotIntensity" type="range" min="0" max="5" step="0.05" value="1.6" />
+      <label for="spotColor">Spot color</label>
+      <input id="spotColor" type="color" value="#ffdba1" />
+    </div>
+
+    <!-- Note: enabled soft shadows on scene -->
+    <a-scene shadow="type: pcfsoft; mapSizeWidth: 1024; mapSizeHeight: 1024; autoUpdate: true">
       <a-assets>
         <a-asset-item id="friendopede" src="Friendopede.glb"></a-asset-item>
         <a-asset-item id="Adora" src="Adora.glb"></a-asset-item>
@@ -48,28 +65,25 @@
       <!-- Ground -->
       <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="20" color="#7BC8A4" shadow="receive: true"></a-plane>
 
-        <!-- Lighting -->
-        <a-light type="ambient" color="#7a7a84"></a-light>
+      <!-- Ambient fill (low) -->
+      <a-light type="ambient" color="#7a7a84"></a-light>
 
-        <!-- Spotlight positioned above the Friendopede and aimed at it -->
-        <!-- friendopede entity below uses id "friendopedeEntity" so the light can target it -->
-        <a-entity
-          id="friendopedeLight"
-          position="1 2 -4"
-          light="type: spot; color: #ffffff; intensity: 2; distance: 3; angle: 35; penumbra: 0.5; decay: 0.5; castShadow: true"
-          look-at="#friendopedeEntity">
-        </a-entity>
+      <!-- Spotlight positioned above the Friendopede and aimed at it.
+           Adjust 'intensity' and 'color' attributes below for different looks. -->
+      <a-entity
+        id="friendopedeLight"
+        position="1 1.8 -4"
+        light="type: spot; color: #ffdba1; intensity: 1.6; distance: 6; angle: 30; penumbra: 0.6; decay: 2; castShadow: true">
+      </a-entity>
 
-      <!-- Models (make them "clickable" so raycasters can target them) -->
+      <!-- Models -->
       <a-entity id="friendopedeEntity" gltf-model="#friendopede" position="1 0 -4" class="clickable" shadow="cast: true"></a-entity>
       <a-entity gltf-model="#Adora" position="1 0.8 -6" scale="0.08 0.08 0.08" rotation="0 -90 0" class="clickable"></a-entity>
       <a-entity gltf-model="#rockruff" position="1 0 -2" scale="0.3 0.3 0.3" rotation="0 -90 0" class="clickable"></a-entity>
 
-      <!-- Camera Rig: camera + controllers -->
+      <!-- Camera Rig -->
       <a-entity id="cameraRig" position="0 0 0">
-        <!-- Head / Camera. look-controls + wasd-controls work for desktop; headset controls when available -->
         <a-entity id="camera" camera look-controls wasd-controls position="0 1.6 0">
-          <!-- Gaze / Mouse cursor -->
           <a-entity
             cursor="fuse: false; rayOrigin: mouse"
             raycaster="objects: .clickable"
@@ -79,24 +93,10 @@
           </a-entity>
         </a-entity>
 
-        <!-- Left controller: laser + teleport (uses grip button by default) -->
-        <a-entity
-          id="leftHand"
-          laser-controls="hand: left"
-          teleport-controls="cameraRig: #cameraRig; teleportOrigin: #camera; button: grip"
-          super-hands>
-        </a-entity>
-
-        <!-- Right controller: laser + teleport (uses trigger by default) -->
-        <a-entity
-          id="rightHand"
-          laser-controls="hand: right"
-          teleport-controls="cameraRig: #cameraRig; teleportOrigin: #camera; button: trigger"
-          super-hands>
-        </a-entity>
+        <a-entity id="leftHand" laser-controls="hand: left" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #camera; button: grip" super-hands></a-entity>
+        <a-entity id="rightHand" laser-controls="hand: right" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #camera; button: trigger" super-hands></a-entity>
       </a-entity>
 
-      <!-- Environment -->
       <a-sky color="#ECECEC"></a-sky>
     </a-scene>
 
@@ -104,13 +104,11 @@
       (function() {
         const btn = document.getElementById('enterVrBtn');
         const scene = document.querySelector('a-scene');
-
         if (!scene || !btn) return;
 
-        // Update label and aria-pressed when VR state changes
         function updateButtonLabel() {
           try {
-            const inVr = scene.is('vr-mode'); // A-Frame flag for VR mode
+            const inVr = scene.is('vr-mode');
             btn.textContent = inVr ? 'Exit VR' : 'Enter VR';
             btn.setAttribute('aria-pressed', String(inVr));
           } catch (e) {
@@ -118,12 +116,9 @@
             btn.setAttribute('aria-pressed', 'false');
           }
         }
-
-        // Hook A-Frame events to keep label in sync
         scene.addEventListener('enter-vr', updateButtonLabel);
         scene.addEventListener('exit-vr', updateButtonLabel);
 
-        // Click toggles VR mode (user gesture required by WebXR)
         btn.addEventListener('click', function () {
           try {
             if (scene.is('vr-mode')) {
@@ -132,31 +127,44 @@
               scene.enterVR();
             }
           } catch (err) {
-            // fallback: try calling built-in method directly
             if (typeof scene.enterVR === 'function') scene.enterVR();
           }
         });
 
-        // Feature detection: show the button only if immersive VR is supported.
-        // navigator.xr.isSessionSupported returns a promise.
         if (navigator.xr && typeof navigator.xr.isSessionSupported === 'function') {
           navigator.xr.isSessionSupported('immersive-vr').then(function (supported) {
-            if (supported) {
-              btn.style.display = 'block';
-              updateButtonLabel();
-            } else {
-              // Not supported: still show a button for A-Frame fullscreen/inline fallback if desired
-              // Comment out the next line if you want to hide the button on unsupported devices
-              btn.style.display = 'block';
-            }
-          }).catch(function () {
-            // conservative fallback: show the button (A-Frame may handle older browsers)
             btn.style.display = 'block';
-          });
+            if (supported) updateButtonLabel();
+          }).catch(function () { btn.style.display = 'block'; });
         } else {
-          // No WebXR API detected — show the button so A-Frame can still attempt enterVR (fullscreen/fallback)
           btn.style.display = 'block';
         }
+
+        // -- spot controls: wire inputs to update color & intensity at runtime --
+        const lightEl = document.getElementById('friendopedeLight');
+        const intensityInput = document.getElementById('spotIntensity');
+        const colorInput = document.getElementById('spotColor');
+
+        // Ensure the light aims at the model (update per-frame so it follows if model moves)
+        const target = document.getElementById('friendopedeEntity');
+        if (target) {
+          // make the light look at the model
+          const updateLookAt = () => {
+            const p = target.object3D.getWorldPosition(new THREE.Vector3());
+            lightEl.object3D.lookAt(p);
+          };
+          // update once the model has loaded, and on each tick if you move it
+          target.addEventListener('model-loaded', updateLookAt);
+        }
+
+        intensityInput.addEventListener('input', (e) => {
+          const v = parseFloat(e.target.value);
+          lightEl.setAttribute('light', { intensity: v });
+        });
+
+        colorInput.addEventListener('input', (e) => {
+          lightEl.setAttribute('light', { color: e.target.value });
+        });
       })();
     </script>
   </body>
