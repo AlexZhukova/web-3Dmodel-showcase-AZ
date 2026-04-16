@@ -48,17 +48,18 @@
       <!-- Ground -->
       <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="20" color="#7BC8A4" shadow="receive: true"></a-plane>
 
-        <!-- Lighting -->
-        <a-light type="ambient" color="#222"></a-light>
+      <!-- Lighting -->
+      <!-- reduce ambient so the spot is visible -->
+      <a-light type="ambient" color="#222" intensity="0.25"></a-light>
 
-        <!-- Spotlight positioned above the Friendopede and aimed at it -->
-        <!-- friendopede entity below uses id "friendopedeEntity" so the light can target it -->
-        <a-entity
-          id="friendopedeLight"
-          position="1 2.5 -4"
-          light="type: spot; color: #ffffff; intensity: 1.2; distance: 10; angle: 35; penumbra: 0.4; decay: 2; castShadow: true"
-          look-at="#friendopedeEntity">
-        </a-entity>
+      <!-- Spotlight positioned above the model and pointing straight down (perpendicular to plane).
+           angle is specified in radians (use ~0.35 for ~20° cone). -->
+      <a-entity
+        id="friendopedeLight"
+        position="1 2.5 -4"
+        rotation="-90 0 0"
+        light="type: spot; color: #ffffff; intensity: 1.6; distance: 10; angle: 0.35; penumbra: 0.4; decay: 2; castShadow: true">
+      </a-entity>
 
       <!-- Models (make them "clickable" so raycasters can target them) -->
       <a-entity id="friendopedeEntity" gltf-model="#friendopede" position="1 0 -4" class="clickable" shadow="cast: true"></a-entity>
@@ -67,7 +68,7 @@
 
       <!-- Camera Rig: camera + controllers -->
       <a-entity id="cameraRig" position="0 0 0">
-        <!-- Head / Camera. look-controls + wasd-controls work for desktop; headset controls when available -->
+        <!-- Head / Camera -->
         <a-entity id="camera" camera look-controls wasd-controls position="0 1.6 0">
           <!-- Gaze / Mouse cursor -->
           <a-entity
@@ -79,21 +80,9 @@
           </a-entity>
         </a-entity>
 
-        <!-- Left controller: laser + teleport (uses grip button by default) -->
-        <a-entity
-          id="leftHand"
-          laser-controls="hand: left"
-          teleport-controls="cameraRig: #cameraRig; teleportOrigin: #camera; button: grip"
-          super-hands>
-        </a-entity>
-
-        <!-- Right controller: laser + teleport (uses trigger by default) -->
-        <a-entity
-          id="rightHand"
-          laser-controls="hand: right"
-          teleport-controls="cameraRig: #cameraRig; teleportOrigin: #camera; button: trigger"
-          super-hands>
-        </a-entity>
+        <!-- Controllers -->
+        <a-entity id="leftHand" laser-controls="hand: left" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #camera; button: grip" super-hands></a-entity>
+        <a-entity id="rightHand" laser-controls="hand: right" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #camera; button: trigger" super-hands></a-entity>
       </a-entity>
 
       <!-- Environment -->
