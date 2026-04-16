@@ -8,8 +8,30 @@
     <!-- Optional extras for teleport + interactions -->
     <script src="https://unpkg.com/aframe-teleport-controls@4.0.1/dist/aframe-teleport-controls.min.js"></script>
     <script src="https://unpkg.com/super-hands@^3.0.0/dist/super-hands.min.js"></script>
+
+    <style>
+      /* Enter VR UI button */
+      #enterVrBtn {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        z-index: 9999;
+        padding: 10px 14px;
+        font-size: 14px;
+        border: none;
+        border-radius: 6px;
+        background: #1e88e5;
+        color: white;
+        cursor: pointer;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        display: none; /* hidden until we check support */
+      }
+      #enterVrBtn:active { transform: translateY(1px); }
+    </style>
   </head>
   <body>
+    <button id="enterVrBtn" aria-pressed="false">Enter VR</button>
+
     <a-scene>
       <a-assets>
         <a-asset-item id="friendopede" src="Friendopede.glb"></a-asset-item>
@@ -57,5 +79,65 @@
       <!-- Environment -->
       <a-sky color="#ECECEC"></a-sky>
     </a-scene>
+
+    <script>
+      (function() {
+        const btn = document.getElementById('enterVrBtn');
+        const scene = document.querySelector('a-scene');
+
+        if (!scene || !btn) return;
+
+        // Update label and aria-pressed when VR state changes
+        function updateButtonLabel() {
+          try {
+            const inVr = scene.is('vr-mode'); // A-Frame flag for VR mode
+            btn.textContent = inVr ? 'Exit VR' : 'Enter VR';
+            btn.setAttribute('aria-pressed', String(inVr));
+          } catch (e) {
+            btn.textContent = 'Enter VR';
+            btn.setAttribute('aria-pressed', 'false');
+          }
+        }
+
+        // Hook A-Frame events to keep label in sync
+        scene.addEventListener('enter-vr', updateButtonLabel);
+        scene.addEventListener('exit-vr', updateButtonLabel);
+
+        // Click toggles VR mode (user gesture required by WebXR)
+        btn.addEventListener('click', function () {
+          try {
+            if (scene.is('vr-mode')) {
+              scene.exitVR();
+            } else {
+              scene.enterVR();
+            }
+          } catch (err) {
+            // fallback: try calling built-in method directly
+            if (typeof scene.enterVR === 'function') scene.enterVR();
+          }
+        });
+
+        // Feature detection: show the button only if immersive VR is supported.
+        // navigator.xr.isSessionSupported returns a promise.
+        if (navigator.xr && typeof navigator.xr.isSessionSupported === 'function') {
+          navigator.xr.isSessionSupported('immersive-vr').then(function (supported) {
+            if (supported) {
+              btn.style.display = 'block';
+              updateButtonLabel();
+            } else {
+              // Not supported: still show a button for A-Frame fullscreen/inline fallback if desired
+              // Comment out the next line if you want to hide the button on unsupported devices
+              btn.style.display = 'block';
+            }
+          }).catch(function () {
+            // conservative fallback: show the button (A-Frame may handle older browsers)
+            btn.style.display = 'block';
+          });
+        } else {
+          // No WebXR API detected — show the button so A-Frame can still attempt enterVR (fullscreen/fallback)
+          btn.style.display = 'block';
+        }
+      })();
+    </script>
   </body>
 </html>
