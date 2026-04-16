@@ -1,10 +1,13 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Alexandra Zhukova 3D Model Showcase</title>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+    <!-- Optional extras for teleport + interactions -->
+    <script src="https://unpkg.com/aframe-teleport-controls@4.0.1/dist/aframe-teleport-controls.min.js"></script>
+    <script src="https://unpkg.com/super-hands@^3.0.0/dist/super-hands.min.js"></script>
   </head>
   <body>
     <a-scene>
@@ -12,11 +15,45 @@
         <a-asset-item id="friendopede" src="Friendopede.glb"></a-asset-item>
         <a-asset-item id="Adora" src="Adora.glb"></a-asset-item>
       </a-assets>
-      <!--Ground-->
+
+      <!-- Ground -->
       <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="10" color="#7BC8A4"></a-plane>
-      <!-- 3D Models -->
-      <a-entity gltf-model="#friendopede" position="1 0 -4"></a-entity>
-      <a-entity gltf-model="#Adora" position="2 0 -4" scale="0.5 0.5 0.5 rotation="0 0 90></a-entity>
+
+      <!-- Models (make them "clickable" so raycasters can target them) -->
+      <a-entity gltf-model="#friendopede" position="1 0 -4" class="clickable"></a-entity>
+      <a-entity gltf-model="#Adora" position="2 0 -4" scale="0.5 0.5 0.5" rotation="0 0 90" class="clickable"></a-entity>
+
+      <!-- Camera Rig: camera + controllers -->
+      <a-entity id="cameraRig" position="0 0 0">
+        <!-- Head / Camera. look-controls + wasd-controls work for desktop; headset controls when available -->
+        <a-entity id="camera" camera look-controls wasd-controls position="0 1.6 0">
+          <!-- Gaze / Mouse cursor -->
+          <a-entity
+            cursor="fuse: false; rayOrigin: mouse"
+            raycaster="objects: .clickable"
+            position="0 0 -1"
+            geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02"
+            material="color: black; shader: flat">
+          </a-entity>
+        </a-entity>
+
+        <!-- Left controller: laser + teleport (uses grip button by default) -->
+        <a-entity
+          id="leftHand"
+          laser-controls="hand: left"
+          teleport-controls="cameraRig: #cameraRig; teleportOrigin: #camera; button: grip"
+          super-hands>
+        </a-entity>
+
+        <!-- Right controller: laser + teleport (uses trigger by default) -->
+        <a-entity
+          id="rightHand"
+          laser-controls="hand: right"
+          teleport-controls="cameraRig: #cameraRig; teleportOrigin: #camera; button: trigger"
+          super-hands>
+        </a-entity>
+      </a-entity>
+
       <!-- Environment -->
       <a-sky color="#ECECEC"></a-sky>
     </a-scene>
