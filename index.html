@@ -102,6 +102,14 @@
         rotation="-90 0 0"
         light="type: spot; color: #ffffff; intensity: 18; distance: 20; angle: 60; penumbra: 0.5; castShadow: true">
       </a-entity>
+
+      <!-- Fill point light near ground for Adora (dimmer than spotlight) -->
+      <a-entity
+        id="adoraFillLight"
+        position="1 0.3 -6"
+        light="type: point; color: #fff7e6; intensity: 4; distance: 6; decay: 2; castShadow: false">
+      </a-entity>
+
       <a-entity 
         id="adoraEntity" 
         gltf-model="#Adora" 
@@ -182,4 +190,3 @@
     </script>
   </body>
 </html>
-    
