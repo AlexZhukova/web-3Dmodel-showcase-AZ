@@ -12,7 +12,9 @@
     <script src="https://unpkg.com/super-hands@^3.0.0/dist/super-hands.min.js"></script>
     <!-- Movement & GLTF extras -->
     <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
-        
+    <!-- NippleJS for on-screen joystick -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.0/nipplejs.min.js"></script>
+
     <style>
       body { margin: 0; overflow: hidden; }
       /* Enter VR button (existing) */
@@ -32,11 +34,34 @@
         color: white;
         cursor: pointer;
         box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        display: none; 
+        display: none;
         transition: background 0.2s;
       }
       #enterVrBtn:hover { background: #1565c0; }
       #enterVrBtn:active { transform: translateY(2px); }
+
+      /* Enter Mobile button: same style, placed above Enter VR */
+      #enterMobileBtn {
+        position: fixed;
+        right: 20px;
+        bottom: 76px;
+        z-index: 9999;
+        padding: 12px 20px;
+        font-family: sans-serif;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border: none;
+        border-radius: 8px;
+        background: #1e88e5;
+        color: white;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        display: block;
+        transition: background 0.2s;
+      }
+      #enterMobileBtn:hover { background: #1565c0; }
+      #enterMobileBtn:active { transform: translateY(2px); }
 
       /* Last-changed UI: same style, opposite corner */
       #lastUpdatedBtn {
@@ -61,11 +86,47 @@
       }
       #lastUpdatedBtn small { display:block; font-weight: normal; font-size: 11px; opacity: 0.9; }
       #lastUpdatedBtn:hover { background: #1565c0; }
+
+      /* Joystick wrapper (hidden by default). Placed above the last-updated button */
+      #joystickWrapper {
+        position: fixed;
+        left: 20px;
+        bottom: 76px; /* above Last changed */
+        width: 140px;
+        height: 140px;
+        z-index: 9998;
+        display: none;
+        touch-action: none;
+        pointer-events: none; /* enable when visible */
+      }
+      #joystick {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: rgba(30,136,229,0.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: auto;
+      }
+
+      /* Small responsive tweak so joystick doesn't overlap on tiny screens */
+      @media (max-height:420px) {
+        #enterMobileBtn { bottom: 64px; }
+        #enterVrBtn { bottom: 12px; }
+        #joystickWrapper { bottom: 64px; left: 12px; width: 110px; height: 110px; }
+        #joystick { width: 90px; height: 90px; }
+      }
     </style>
   </head>
   <body>
+    <button id="enterMobileBtn">Enter Mobile</button>
     <button id="enterVrBtn" aria-pressed="false">Enter VR</button>
     <button id="lastUpdatedBtn" aria-hidden="false">Last changed<br><small>—</small></button>
+
+    <div id="joystickWrapper" aria-hidden="true">
+      <div id="joystick"></div>
+    </div>
 
     <a-scene shadow="type: pcfsoft">
       <a-assets>
@@ -76,8 +137,7 @@
         <img id="darksky" src="dark-sky.jpeg">
       </a-assets>
 
-      <!-- Ground: use PBR standard material with low metalness and higher roughness
-           to reduce glossiness but keep some reflection -->
+      <!-- Ground: use PBR standard material with low metalness and higher roughness -->
       <a-plane 
         position="0 0 -4" 
         rotation="-90 0 0" 
@@ -87,11 +147,10 @@
         material="shader: standard; color: #7BC8A4; metalness: 0.04; roughness: 0.9; envMapIntensity: 0.4">
       </a-plane>
 
-      <!-- Global Ambient Lighting (less dark now) -->
+      <!-- Global Ambient Lighting -->
       <a-light type="ambient" color="#555" intensity="0.55"></a-light>
 
-      <!-- Directional key light: gentle intensity, warm tint, soft shadows.
-           Provides even, smooth illumination while preserving contrast. -->
+      <!-- Directional key light -->
       <a-entity
         id="mainDirLight"
         position="-3 6 2"
@@ -99,127 +158,40 @@
         light="type: directional; color: #fff9e6; intensity: 0.6; castShadow: true">
       </a-entity>
 
-      <!-- 1. Spotlight for Rockruff (Front) -->
+      <!-- Rockruff -->
       <a-entity
         id="rockruffLight"
         position="1 4 -2"
         rotation="-90 0 0"
         light="type: spot; color: #ffffff; intensity: 15; distance: 10; angle: 45; penumbra: 0.5; decay: 1; castShadow: true">
       </a-entity>
-      <a-entity 
-        id="rockruffEntity" 
-        gltf-model="#rockruff" 
-        position="1 0 -2" 
-        scale="0.3 0.3 0.3" 
-        rotation="0 -90 0" 
-        class="clickable" 
-        shadow="cast: true">
-      </a-entity>
+      <a-entity id="rockruffEntity" gltf-model="#rockruff" position="1 0 -2" scale="0.3 0.3 0.3" rotation="0 -90 0" class="clickable" shadow="cast: true"></a-entity>
+      <a-entity id="rockruffFillLight" position="1 0.12 -2" light="type: point; color: #fff7e6; intensity: 0.6; distance: 1.0; decay: 1; castShadow: false"></a-entity>
+      <a-entity id="rockruffSuddenLight" position="1 0.3 -2.45" light="type: point; color: #a8d0ff; intensity: 0.25; distance: 0.9; decay: 1; castShadow: false"></a-entity>
 
-      <!-- Fill point light for Rockruff (smaller & dimmer by half, smoother falloff) -->
-      <a-entity
-        id="rockruffFillLight"
-        position="1 0.12 -2"
-        light="type: point; color: #fff7e6; intensity: 0.6; distance: 1.0; decay: 1; castShadow: false">
-      </a-entity>
+      <!-- Friendopede -->
+      <a-entity id="friendopedeLight" position="1 4 -4" rotation="-90 0 0" light="type: spot; color: #ffffff; intensity: 15; distance: 10; angle: 45; penumbra: 0.5; decay: 1; castShadow: true"></a-entity>
+      <a-entity id="friendopedeEntity" gltf-model="#friendopede" position="1 0 -4" class="clickable" shadow="cast: true"></a-entity>
+      <a-entity id="friendopedeFillLight" position="1 0.12 -4" light="type: point; color: #fff7e6; intensity: 0.65; distance: 1.25; decay: 1; castShadow: false"></a-entity>
+      <a-entity id="friendopedeSuddenLight" position="1 0.3 -4.45" light="type: point; color: #ffd1e6; intensity: 0.3; distance: 1.0; decay: 1; castShadow: false"></a-entity>
 
-      <!-- Subtle colored sudden point light behind Rockruff (dimmer than fill) -->
-      <a-entity
-        id="rockruffSuddenLight"
-        position="1 0.3 -2.45"
-        light="type: point; color: #a8d0ff; intensity: 0.25; distance: 0.9; decay: 1; castShadow: false">
-      </a-entity>
-
-      <!-- 2. Spotlight for Friendopede (Middle) -->
-      <a-entity
-        id="friendopedeLight"
-        position="1 4 -4"
-        rotation="-90 0 0"
-        light="type: spot; color: #ffffff; intensity: 15; distance: 10; angle: 45; penumbra: 0.5; decay: 1; castShadow: true">
-      </a-entity>
-      <a-entity 
-        id="friendopedeEntity" 
-        gltf-model="#friendopede" 
-        position="1 0 -4" 
-        class="clickable" 
-        shadow="cast: true">
-      </a-entity>
-
-      <!-- Fill point light for Friendopede (smaller & dimmer by half, smoother falloff) -->
-      <a-entity
-        id="friendopedeFillLight"
-        position="1 0.12 -4"
-        light="type: point; color: #fff7e6; intensity: 0.65; distance: 1.25; decay: 1; castShadow: false">
-      </a-entity>
-
-      <!-- Subtle colored sudden point light behind Friendopede (dimmer than fill) -->
-      <a-entity
-        id="friendopedeSuddenLight"
-        position="1 0.3 -4.45"
-        light="type: point; color: #ffd1e6; intensity: 0.3; distance: 1.0; decay: 1; castShadow: false">
-      </a-entity>
-
-      <!-- 3. Spotlight for Adora (Back) - raised and wider radius -->
-      <a-entity
-        id="adoraLight"
-        position="1 6 -6"
-        rotation="-90 0 0"
-        light="type: spot; color: #ffffff; intensity: 18; distance: 20; angle: 60; penumbra: 0.5; decay: 1; castShadow: true">
-      </a-entity>
-
-      <!-- Fill point light near ground for Adora (dimmer than spotlight) -->
-      <a-entity
-        id="adoraFillLight"
-        position="1 0.3 -6"
-        light="type: point; color: #fff7e6; intensity: 4; distance: 6; decay: 1; castShadow: false">
-      </a-entity>
-
-      <!-- Subtle colored sudden point light behind Adora (dimmer than fill) -->
-      <a-entity
-        id="adoraSuddenLight"
-        position="1 0.55 -6.5"
-        light="type: point; color: #fff2d1; intensity: 0.8; distance: 1.8; decay: 1; castShadow: false">
-      </a-entity>
-
-      <a-entity 
-        id="adoraEntity" 
-        gltf-model="#Adora" 
-        position="1 0.8 -6" 
-        scale="0.08 0.08 0.08" 
-        rotation="0 -90 0" 
-        class="clickable" 
-        shadow="cast: true">
-      </a-entity>
+      <!-- Adora -->
+      <a-entity id="adoraLight" position="1 6 -6" rotation="-90 0 0" light="type: spot; color: #ffffff; intensity: 18; distance: 20; angle: 60; penumbra: 0.5; decay: 1; castShadow: true"></a-entity>
+      <a-entity id="adoraFillLight" position="1 0.3 -6" light="type: point; color: #fff7e6; intensity: 4; distance: 6; decay: 1; castShadow: false"></a-entity>
+      <a-entity id="adoraSuddenLight" position="1 0.55 -6.5" light="type: point; color: #fff2d1; intensity: 0.8; distance: 1.8; decay: 1; castShadow: false"></a-entity>
+      <a-entity id="adoraEntity" gltf-model="#Adora" position="1 0.8 -6" scale="0.08 0.08 0.08" rotation="0 -90 0" class="clickable" shadow="cast: true"></a-entity>
 
       <!-- Camera Rig -->
       <a-entity id="cameraRig">
-        <!-- Head -->
         <a-entity id="camera" camera look-controls wasd-controls position="0 1.6 0">
-          <a-entity
-            cursor="fuse: false; rayOrigin: mouse"
-            raycaster="objects: .clickable"
-            position="0 0 -1"
-            geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015"
-            material="color: #00ff00; shader: flat; opacity: 0.5">
-          </a-entity>
+          <a-entity cursor="fuse: false; rayOrigin: mouse" raycaster="objects: .clickable" position="0 0 -1" geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015" material="color: #00ff00; shader: flat; opacity: 0.5"></a-entity>
         </a-entity>
 
         <!-- Hands -->
-        <a-entity 
-            id="leftHand" 
-            laser-controls="hand: left" 
-            teleport-controls="cameraRig: #cameraRig; teleportOrigin: #camera; button: grip" 
-            super-hands>
-        </a-entity>
-        <a-entity 
-            id="rightHand" 
-            laser-controls="hand: right" 
-            teleport-controls="cameraRig: #cameraRig; teleportOrigin: #camera; button: trigger" 
-            super-hands>
-        </a-entity>
+        <a-entity id="leftHand" laser-controls="hand: left" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #camera; button: grip" super-hands></a-entity>
+        <a-entity id="rightHand" laser-controls="hand: right" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #camera; button: trigger" super-hands></a-entity>
       </a-entity>
 
-      <!-- Sky -->
       <a-sky src="#darksky"></a-sky>
     </a-scene>
 
@@ -230,43 +202,34 @@
         const lastBtn = document.getElementById('lastUpdatedBtn');
         const joystickWrapper = document.getElementById('joystickWrapper');
         const joystickEl = document.getElementById('joystick');
-        const joystickWrapper = document.getElementById('joystickWrapper');
-        const joystickEl = document.getElementById('joystick');
-        const joystickWrapper = document.getElementById('joystickWrapper');
-        const joystickEl = document.getElementById('joystick');
-        const joystickWrapper = document.getElementById('joystickWrapper');
-        const joystickEl = document.getElementById('joystick');
         const scene = document.querySelector('a-scene');
+        const cameraRig = document.getElementById('cameraRig');
+        const cameraEl = document.getElementById('camera');
 
-        if (!scene || !btn || !lastBtn) return;
+        if (!scene || !enterVrBtn || !lastBtn) return;
 
-        function updateButtonLabel() {
+        // --- Enter VR button logic ---
+        function updateVrLabel() {
           const inVr = scene.is('vr-mode');
-          btn.textContent = inVr ? 'Exit VR' : 'Enter VR';
-          btn.setAttribute('aria-pressed', String(inVr));
+          enterVrBtn.textContent = inVr ? 'Exit VR' : 'Enter VR';
+          enterVrBtn.setAttribute('aria-pressed', String(inVr));
         }
-
-        scene.addEventListener('enter-vr', updateButtonLabel);
-        scene.addEventListener('exit-vr', updateButtonLabel);
-
-        btn.addEventListener('click', function () {
-          if (scene.is('vr-mode')) {
-            scene.exitVR();
-          } else {
-            scene.enterVR();
-          }
+        scene.addEventListener('enter-vr', updateVrLabel);
+        scene.addEventListener('exit-vr', updateVrLabel);
+        enterVrBtn.addEventListener('click', function () {
+          if (scene.is('vr-mode')) scene.exitVR(); else scene.enterVR();
         });
 
         // Show Enter VR button on supported devices
         if (navigator.xr && typeof navigator.xr.isSessionSupported === 'function') {
           navigator.xr.isSessionSupported('immersive-vr').then(function (supported) {
-            btn.style.display = 'block';
-            updateButtonLabel();
+            enterVrBtn.style.display = supported ? 'block' : 'block'; // show anyway for A-Frame fallback
+            updateVrLabel();
           }).catch(function () {
-            btn.style.display = 'block';
+            enterVrBtn.style.display = 'block';
           });
         } else {
-          btn.style.display = 'block';
+          enterVrBtn.style.display = 'block';
         }
 
         // --- Last-updated UI logic ---
@@ -282,29 +245,17 @@
           lastBtn.style.display = 'block';
         }
 
-        // Primary: try fetching Last-Modified header for same-origin index.html
         let lastKnown = null;
         function fetchLastModified() {
-          // HEAD request to same URL; cache disabled to detect changes
           fetch(window.location.href, { method: 'HEAD', cache: 'no-store' })
             .then(response => {
               const header = response.headers.get('last-modified');
-              if (header) {
-                if (lastKnown !== header) {
-                  lastKnown = header;
-                  setLastUpdatedLabel(header);
-                }
-              } else {
-                // fallback to document.lastModified if header missing
-                const fallback = document.lastModified || new Date().toString();
-                if (lastKnown !== fallback) {
-                  lastKnown = fallback;
-                  setLastUpdatedLabel(fallback);
-                }
+              const fallback = header || document.lastModified || new Date().toString();
+              if (lastKnown !== fallback) {
+                lastKnown = fallback;
+                setLastUpdatedLabel(fallback);
               }
-            })
-            .catch(() => {
-              // network/CORS fallback: use document.lastModified
+            }).catch(() => {
               const fallback = document.lastModified || new Date().toString();
               if (lastKnown !== fallback) {
                 lastKnown = fallback;
@@ -312,15 +263,9 @@
               }
             });
         }
-
-        // initial set from best available source
         fetchLastModified();
-
-        // poll every 3 minutes (180000 ms) to detect updates
-        const POLL_MS = 180000;
+        const POLL_MS = 180000; // 3 minutes
         const pollHandle = setInterval(fetchLastModified, POLL_MS);
-
-        // Optional: when user clicks lastUpdatedBtn, copy timestamp to clipboard
         lastBtn.addEventListener('click', () => {
           const text = lastBtn.querySelector('small')?.textContent || '';
           if (!text) return;
@@ -328,8 +273,78 @@
             const prev = lastBtn.innerHTML;
             lastBtn.textContent = 'Copied';
             setTimeout(() => { lastBtn.innerHTML = prev; }, 800);
-          }).catch(() => { /* ignore */ });
+          }).catch(() => {});
         });
+
+        // --- Mobile joystick logic ---
+        let mobileMode = false;
+        let nippleManager = null;
+        const move = { x: 0, y: 0 };
+        const MOBILE_SPEED = 0.06;
+
+        function initJoystick() {
+          if (nippleManager) return;
+          if (typeof nipplejs === 'undefined') return;
+          nippleManager = nipplejs.create({
+            zone: joystickEl,
+            mode: 'static',
+            position: { left: '60px', top: '60px' },
+            color: '#1e88e5',
+            size: 120,
+            restOpacity: 0.3
+          });
+
+          nippleManager.on('move', (evt, data) => {
+            if (!data || !data.vector) return;
+            move.x = data.vector.x; // left/right
+            move.y = data.vector.y; // forward/back
+          });
+          nippleManager.on('end', () => { move.x = 0; move.y = 0; });
+        }
+
+        enterMobileBtn.addEventListener('click', () => {
+          mobileMode = !mobileMode;
+          enterMobileBtn.textContent = mobileMode ? 'Exit Mobile' : 'Enter Mobile';
+          joystickWrapper.style.display = mobileMode ? 'block' : 'none';
+          joystickWrapper.setAttribute('aria-hidden', String(!mobileMode));
+          joystickWrapper.style.pointerEvents = mobileMode ? 'auto' : 'none';
+          if (mobileMode) {
+            initJoystick();
+            if (cameraEl && cameraEl.hasAttribute('wasd-controls')) {
+              cameraEl.setAttribute('wasd-controls', 'enabled: false');
+            }
+          } else {
+            move.x = 0; move.y = 0;
+            if (cameraEl && cameraEl.hasAttribute('wasd-controls')) {
+              cameraEl.setAttribute('wasd-controls', 'enabled: true');
+            }
+          }
+        });
+
+        // Movement loop applying joystick vector to cameraRig
+        (function movementLoop() {
+          const THREE = window.THREE;
+          if (!THREE) { requestAnimationFrame(movementLoop); return; }
+          if (mobileMode && (Math.abs(move.x) > 0.01 || Math.abs(move.y) > 0.01)) {
+            const camObj = cameraEl.object3D;
+            const rigObj = cameraRig.object3D;
+            const forward = new THREE.Vector3();
+            camObj.getWorldDirection(forward);
+            forward.y = 0;
+            forward.normalize();
+            const up = new THREE.Vector3(0,1,0);
+            const right = new THREE.Vector3();
+            right.crossVectors(forward, up).normalize();
+
+            // apply movement (invert right for natural control)
+            rigObj.position.addScaledVector(forward, move.y * MOBILE_SPEED);
+            rigObj.position.addScaledVector(right, -move.x * MOBILE_SPEED);
+          }
+          requestAnimationFrame(movementLoop);
+        })();
+
+        // Hide Enter Mobile on devices without touch if you prefer:
+        // if (!('ontouchstart' in window || navigator.maxTouchPoints > 0)) enterMobileBtn.style.display = 'none';
 
         // Soften directional shadow and tune shadow camera after assets load
         const dirEl = document.getElementById('mainDirLight');
@@ -337,26 +352,22 @@
           dirEl.addEventListener('loaded', () => {
             const light = dirEl.getObject3D('light');
             if (light && light.shadow) {
-              // Increase shadow map for quality and soften edges
               light.shadow.mapSize.width = 2048;
               light.shadow.mapSize.height = 2048;
               light.shadow.radius = 8;
               light.shadow.bias = -0.0006;
-              // Fit orthographic shadow camera to scene area
               const cam = light.shadow.camera;
-              cam.left = -6;
-              cam.right = 6;
-              cam.top = 6;
-              cam.bottom = -6;
-              cam.near = 0.5;
-              cam.far = 50;
+              cam.left = -6; cam.right = 6; cam.top = 6; cam.bottom = -6; cam.near = 0.5; cam.far = 50;
               cam.updateProjectionMatrix();
             }
           });
         }
 
-        // Clean up when scene is unloaded (if needed)
-        window.addEventListener('beforeunload', () => clearInterval(pollHandle));
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+          clearInterval(pollHandle);
+          if (nippleManager && typeof nippleManager.destroy === 'function') nippleManager.destroy();
+        });
       })();
     </script>
   </body>
