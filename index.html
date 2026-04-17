@@ -291,9 +291,6 @@
         const SENS_X = 0.15; // degrees per px
         const SENS_Y = 0.12;
 
-        function deg(v) { return v * (180 / Math.PI); }
-        function rad(v) { return v * (Math.PI / 180); }
-
         function initJoystick() {
           if (nippleManager) return;
           if (typeof nipplejs === 'undefined') return;
