@@ -134,6 +134,7 @@
         <a-asset-item id="friendopede" src="Friendopede.glb"></a-asset-item>
         <a-asset-item id="Adora" src="Adora.glb"></a-asset-item>
         <a-asset-item id="rockruff" src="rockruff.glb"></a-asset-item>
+        <a-asset-item id="Snowy" src="Snowy the fox.obj"></a-asset-item>
         <img id="darksky" src="dark-sky.jpeg">
       </a-assets>
 
@@ -169,6 +170,18 @@
       <a-entity id="rockruffEntity" gltf-model="#rockruff" position="1 0 -2" scale="0.3 0.3 0.3" rotation="0 -90 0" class="clickable" shadow="cast: true"></a-entity>
       <a-entity id="rockruffFillLight" position="1 0.12 -2" light="type: point; color: #fff7e6; intensity: 0.6; distance: 1.0; decay: 1; castShadow: false"></a-entity>
       <a-entity id="rockruffSuddenLight" position="1 0.3 -2.45" light="type: point; color: #a8d0ff; intensity: 0.25; distance: 0.9; decay: 1; castShadow: false"></a-entity>
+
+      <!-- Snowy (placed opposite the camera, facing Rockruff) -->
+      <a-entity
+        id="snowyLight"
+        position="1 4 2"
+        rotation="-90 0 0"
+        light="type: spot; color: #ffffff; intensity: 15; distance: 10; angle: 45; penumbra: 0.5; decay: 1; castShadow: true">
+      </a-entity>
+      <!-- Snowy is an OBJ; use obj-model to reference the asset item -->
+      <a-entity id="snowyEntity" obj-model="obj: #Snowy" position="1 0 2" scale="0.3 0.3 0.3" rotation="0 180 0" class="clickable" shadow="cast: true"></a-entity>
+      <a-entity id="snowyFillLight" position="1 0.12 2" light="type: point; color: #fff7e6; intensity: 0.6; distance: 1.0; decay: 1; castShadow: false"></a-entity>
+      <a-entity id="snowySuddenLight" position="1 0.3 2.45" light="type: point; color: #a8d0ff; intensity: 0.25; distance: 0.9; decay: 1; castShadow: false"></a-entity>
 
       <!-- Friendopede -->
       <a-entity id="friendopedeLight" position="1 4 -4" rotation="-90 0 0" light="type: spot; color: #ffffff; intensity: 15; distance: 10; angle: 45; penumbra: 0.5; decay: 1; castShadow: true"></a-entity>
