@@ -90,6 +90,15 @@
       <!-- Global Ambient Lighting (less dark now) -->
       <a-light type="ambient" color="#555" intensity="0.5"></a-light>
 
+      <!-- Directional key light: gentle intensity, warm tint, soft shadows.
+           Provides even, smooth illumination while preserving contrast. -->
+      <a-entity
+        id="mainDirLight"
+        position="-3 6 2"
+        rotation="-50 30 0"
+        light="type: directional; color: #fff9e6; intensity: 0.6; castShadow: true">
+      </a-entity>
+
       <!-- 1. Spotlight for Rockruff (Front) -->
       <a-entity
         id="rockruffLight"
@@ -312,6 +321,30 @@
             setTimeout(() => { lastBtn.innerHTML = prev; }, 800);
           }).catch(() => { /* ignore */ });
         });
+
+        // Soften directional shadow and tune shadow camera after assets load
+        const dirEl = document.getElementById('mainDirLight');
+        if (dirEl) {
+          dirEl.addEventListener('loaded', () => {
+            const light = dirEl.getObject3D('light');
+            if (light && light.shadow) {
+              // Increase shadow map for quality and soften edges
+              light.shadow.mapSize.width = 2048;
+              light.shadow.mapSize.height = 2048;
+              light.shadow.radius = 8;
+              light.shadow.bias = -0.0006;
+              // Fit orthographic shadow camera to scene area
+              const cam = light.shadow.camera;
+              cam.left = -6;
+              cam.right = 6;
+              cam.top = 6;
+              cam.bottom = -6;
+              cam.near = 0.5;
+              cam.far = 50;
+              cam.updateProjectionMatrix();
+            }
+          });
+        }
 
         // Clean up when scene is unloaded (if needed)
         window.addEventListener('beforeunload', () => clearInterval(pollHandle));
