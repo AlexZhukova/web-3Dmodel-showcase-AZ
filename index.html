@@ -80,11 +80,11 @@
         shadow="cast: true">
       </a-entity>
 
-      <!-- Fill point light for Rockruff (smaller scale than Adora -> dimmer/closer) -->
+      <!-- Fill point light for Rockruff (smaller & dimmer by half, smoother falloff) -->
       <a-entity
         id="rockruffFillLight"
         position="1 0.12 -2"
-        light="type: point; color: #fff7e6; intensity: 1.2; distance: 2.0; decay: 2; castShadow: false">
+        light="type: point; color: #fff7e6; intensity: 0.6; distance: 1.0; decay: 1; castShadow: false">
       </a-entity>
 
       <!-- 2. Spotlight for Friendopede (Middle) -->
@@ -102,11 +102,11 @@
         shadow="cast: true">
       </a-entity>
 
-      <!-- Fill point light for Friendopede (smaller scale than Adora -> dimmer/closer) -->
+      <!-- Fill point light for Friendopede (smaller & dimmer by half, smoother falloff) -->
       <a-entity
         id="friendopedeFillLight"
         position="1 0.12 -4"
-        light="type: point; color: #fff7e6; intensity: 1.3; distance: 2.5; decay: 2; castShadow: false">
+        light="type: point; color: #fff7e6; intensity: 0.65; distance: 1.25; decay: 1; castShadow: false">
       </a-entity>
 
       <!-- 3. Spotlight for Adora (Back) - raised and wider radius -->
