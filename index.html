@@ -4,89 +4,144 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Alexandra Zhukova 3D Model Showcase</title>
+    <!-- A-Frame Core -->
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
-    <!-- Optional extras for teleport + interactions -->
+    <!-- Teleport Controls -->
     <script src="https://unpkg.com/aframe-teleport-controls@4.0.1/dist/aframe-teleport-controls.min.js"></script>
+    <!-- Interactions -->
     <script src="https://unpkg.com/super-hands@^3.0.0/dist/super-hands.min.js"></script>
-    <!-- Adds movement-controls (gamepad/thumbstick locomotion) -->
-    <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
-    <!-- Adds movement-controls (gamepad/thumbstick locomotion) -->
-    <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
-    <!-- Adds movement-controls (gamepad/thumbstick locomotion) -->
+    <!-- Movement & GLTF extras -->
     <script src="https://unpkg.com/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
         
     <style>
-      /* Enter VR UI button */
+      body { margin: 0; overflow: hidden; }
       #enterVrBtn {
         position: fixed;
-        right: 16px;
-        bottom: 16px;
+        right: 20px;
+        bottom: 20px;
         z-index: 9999;
-        padding: 10px 14px;
-        font-size: 14px;
+        padding: 12px 20px;
+        font-family: sans-serif;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
         border: none;
-        border-radius: 6px;
+        border-radius: 8px;
         background: #1e88e5;
         color: white;
         cursor: pointer;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        display: none; /* hidden until we check support */
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        display: none; 
+        transition: background 0.2s;
       }
-      #enterVrBtn:active { transform: translateY(1px); }
+      #enterVrBtn:hover { background: #1565c0; }
+      #enterVrBtn:active { transform: translateY(2px); }
     </style>
   </head>
   <body>
     <button id="enterVrBtn" aria-pressed="false">Enter VR</button>
 
-    <a-scene>
+    <a-scene shadow="type: pcfsoft">
       <a-assets>
+        <!-- Placeholders for your assets -->
         <a-asset-item id="friendopede" src="Friendopede.glb"></a-asset-item>
         <a-asset-item id="Adora" src="Adora.glb"></a-asset-item>
         <a-asset-item id="rockruff" src="rockruff.glb"></a-asset-item>
-        <img id="darksky" src="dark-sky.jpeg">
+        <img id="darksky" src="https://upload.wikimedia.org/wikipedia/commons/3/3d/Night_Sky_Stars_Trees_02.jpg">
       </a-assets>
 
       <!-- Ground -->
-      <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="20" color="#7BC8A4" shadow="receive: true"></a-plane>
+      <a-plane 
+        position="0 0 -4" 
+        rotation="-90 0 0" 
+        width="20" 
+        height="20" 
+        color="#222" 
+        shadow="receive: true">
+      </a-plane>
 
-      <!-- Lighting -->
-      <a-light type="ambient" color="#222" intensity="0.35"></a-light>
+      <!-- Global Ambient Lighting (Dim to make spotlights pop) -->
+      <a-light type="ambient" color="#333" intensity="0.2"></a-light>
 
-      <!-- Spotlight positioned above the model and pointing straight down (perpendicular to plane).
-           angle is specified in radians (use ~0.35 for ~20° cone). -->
+      <!-- 1. Spotlight for Rockruff (Front) -->
       <a-entity
-        id="friendopedeLight"
-        position="0.8 10 -4"
+        id="rockruffLight"
+        position="1 4 -2"
         rotation="-90 0 0"
-        light="type: spot; color: #ffffff; intensity: 20; distance: 50; angle: 3; penumbra: 0.8; decay: 1; castShadow: true">
+        light="type: spot; color: #ffffff; intensity: 15; distance: 10; angle: 45; penumbra: 0.5; castShadow: true">
+      </a-entity>
+      <a-entity 
+        id="rockruffEntity" 
+        gltf-model="#rockruff" 
+        position="1 0 -2" 
+        scale="0.3 0.3 0.3" 
+        rotation="0 -90 0" 
+        class="clickable" 
+        shadow="cast: true">
       </a-entity>
 
-      <!-- Models-->
-      <a-entity id="friendopedeEntity" gltf-model="#friendopede" position="1 0 -4" class="clickable" shadow="cast: true"></a-entity>
-      <a-entity gltf-model="#Adora" position="1 0.8 -6" scale="0.08 0.08 0.08" rotation="0 -90 0" class="clickable"></a-entity>
-      <a-entity gltf-model="#rockruff" position="1 0 -2" scale="0.3 0.3 0.3" rotation="0 -90 0" class="clickable"></a-entity>
+      <!-- 2. Spotlight for Friendopede (Middle) -->
+      <a-entity
+        id="friendopedeLight"
+        position="1 4 -4"
+        rotation="-90 0 0"
+        light="type: spot; color: #ffffff; intensity: 15; distance: 10; angle: 45; penumbra: 0.5; castShadow: true">
+      </a-entity>
+      <a-entity 
+        id="friendopedeEntity" 
+        gltf-model="#friendopede" 
+        position="1 0 -4" 
+        class="clickable" 
+        shadow="cast: true">
+      </a-entity>
 
-      <!-- Camera Rig: camera + controllers -->
-      <a-entity id="cameraRig" position="0 0 0">
-        <!-- Head / Camera -->
+      <!-- 3. Spotlight for Adora (Back) -->
+      <a-entity
+        id="adoraLight"
+        position="1 4 -6"
+        rotation="-90 0 0"
+        light="type: spot; color: #ffffff; intensity: 15; distance: 10; angle: 45; penumbra: 0.5; castShadow: true">
+      </a-entity>
+      <a-entity 
+        id="adoraEntity" 
+        gltf-model="#Adora" 
+        position="1 0.8 -6" 
+        scale="0.08 0.08 0.08" 
+        rotation="0 -90 0" 
+        class="clickable" 
+        shadow="cast: true">
+      </a-entity>
+
+      <!-- Camera Rig -->
+      <a-entity id="cameraRig">
+        <!-- Head -->
         <a-entity id="camera" camera look-controls wasd-controls position="0 1.6 0">
-          <!-- Gaze / Mouse cursor -->
           <a-entity
             cursor="fuse: false; rayOrigin: mouse"
             raycaster="objects: .clickable"
             position="0 0 -1"
-            geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02"
-            material="color: black; shader: flat">
+            geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015"
+            material="color: #00ff00; shader: flat; opacity: 0.5">
           </a-entity>
         </a-entity>
 
-        <!-- Controllers -->
-        <a-entity id="leftHand" laser-controls="hand: left" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #camera; button: grip" super-hands></a-entity>
-        <a-entity id="rightHand" laser-controls="hand: right" teleport-controls="cameraRig: #cameraRig; teleportOrigin: #camera; button: trigger" super-hands></a-entity>
+        <!-- Hands -->
+        <a-entity 
+            id="leftHand" 
+            laser-controls="hand: left" 
+            teleport-controls="cameraRig: #cameraRig; teleportOrigin: #camera; button: grip" 
+            super-hands>
+        </a-entity>
+        <a-entity 
+            id="rightHand" 
+            laser-controls="hand: right" 
+            teleport-controls="cameraRig: #cameraRig; teleportOrigin: #camera; button: trigger" 
+            super-hands>
+        </a-entity>
       </a-entity>
 
-      <!-- Environment -->
-      <a-sky src="#darksky"></a-sky>
+      <!-- Sky -->
+      <a-sky src="#darksky" color="#111"></a-sky>
     </a-scene>
 
     <script>
@@ -96,54 +151,31 @@
 
         if (!scene || !btn) return;
 
-        // Update label and aria-pressed when VR state changes
         function updateButtonLabel() {
-          try {
-            const inVr = scene.is('vr-mode'); // A-Frame flag for VR mode
-            btn.textContent = inVr ? 'Exit VR' : 'Enter VR';
-            btn.setAttribute('aria-pressed', String(inVr));
-          } catch (e) {
-            btn.textContent = 'Enter VR';
-            btn.setAttribute('aria-pressed', 'false');
-          }
+          const inVr = scene.is('vr-mode');
+          btn.textContent = inVr ? 'Exit VR' : 'Enter VR';
+          btn.setAttribute('aria-pressed', String(inVr));
         }
 
-        // Hook A-Frame events to keep label in sync
         scene.addEventListener('enter-vr', updateButtonLabel);
         scene.addEventListener('exit-vr', updateButtonLabel);
 
-        // Click toggles VR mode (user gesture required by WebXR)
         btn.addEventListener('click', function () {
-          try {
-            if (scene.is('vr-mode')) {
-              scene.exitVR();
-            } else {
-              scene.enterVR();
-            }
-          } catch (err) {
-            // fallback: try calling built-in method directly
-            if (typeof scene.enterVR === 'function') scene.enterVR();
+          if (scene.is('vr-mode')) {
+            scene.exitVR();
+          } else {
+            scene.enterVR();
           }
         });
 
-        // Feature detection: show the button only if immersive VR is supported.
-        // navigator.xr.isSessionSupported returns a promise.
         if (navigator.xr && typeof navigator.xr.isSessionSupported === 'function') {
           navigator.xr.isSessionSupported('immersive-vr').then(function (supported) {
-            if (supported) {
-              btn.style.display = 'block';
-              updateButtonLabel();
-            } else {
-              // Not supported: still show a button for A-Frame fullscreen/inline fallback if desired
-              // Comment out the next line if you want to hide the button on unsupported devices
-              btn.style.display = 'block';
-            }
+            btn.style.display = 'block';
+            updateButtonLabel();
           }).catch(function () {
-            // conservative fallback: show the button (A-Frame may handle older browsers)
             btn.style.display = 'block';
           });
         } else {
-          // No WebXR API detected — show the button so A-Frame can still attempt enterVR (fullscreen/fallback)
           btn.style.display = 'block';
         }
       })();
