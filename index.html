@@ -137,7 +137,8 @@
         <img id="darksky" src="dark-sky.jpeg">
       </a-assets>
 
-      <!-- Ground: use PBR standard material with low metalness and higher roughness -->
+      <!-- Ground: use PBR standard material with low metalness and higher roughness
+           to reduce glossiness but keep some reflection -->
       <a-plane 
         position="0 0 -4" 
         rotation="-90 0 0" 
@@ -147,7 +148,7 @@
         material="shader: standard; color: #7BC8A4; metalness: 0.04; roughness: 0.9; envMapIntensity: 0.4">
       </a-plane>
 
-      <!-- Global Ambient Lighting -->
+      <!-- Global Ambient Lighting (less dark now) -->
       <a-light type="ambient" color="#555" intensity="0.55"></a-light>
 
       <!-- Directional key light -->
@@ -220,10 +221,10 @@
           if (scene.is('vr-mode')) scene.exitVR(); else scene.enterVR();
         });
 
-        // Show Enter VR button on supported devices
+        // Show Enter VR button on supported devices (show anyway for fallback)
         if (navigator.xr && typeof navigator.xr.isSessionSupported === 'function') {
-          navigator.xr.isSessionSupported('immersive-vr').then(function (supported) {
-            enterVrBtn.style.display = supported ? 'block' : 'block'; // show anyway for A-Frame fallback
+          navigator.xr.isSessionSupported('immersive-vr').then(function () {
+            enterVrBtn.style.display = 'block';
             updateVrLabel();
           }).catch(function () {
             enterVrBtn.style.display = 'block';
@@ -276,11 +277,22 @@
           }).catch(() => {});
         });
 
-        // --- Mobile joystick logic ---
+        // --- Mobile joystick + touch-look logic ---
         let mobileMode = false;
         let nippleManager = null;
         const move = { x: 0, y: 0 };
         const MOBILE_SPEED = 0.06;
+
+        // Touch-look variables
+        let touchLookActive = false;
+        let touchId = null;
+        let startX = 0, startY = 0;
+        let startYaw = 0, startPitch = 0;
+        const SENS_X = 0.15; // degrees per px
+        const SENS_Y = 0.12;
+
+        function deg(v) { return v * (180 / Math.PI); }
+        function rad(v) { return v * (Math.PI / 180); }
 
         function initJoystick() {
           if (nippleManager) return;
@@ -296,10 +308,90 @@
 
           nippleManager.on('move', (evt, data) => {
             if (!data || !data.vector) return;
-            move.x = data.vector.x; // left/right
-            move.y = data.vector.y; // forward/back
+            move.x = data.vector.x; // left/right (-1..1)
+            move.y = data.vector.y; // forward/back (-1..1)
           });
           nippleManager.on('end', () => { move.x = 0; move.y = 0; });
+        }
+
+        function enableTouchLook() {
+          if (!cameraEl) return;
+          // disable A-Frame's built-in touch look to avoid conflicts
+          cameraEl.setAttribute('look-controls', 'enabled: false');
+          window.addEventListener('touchstart', onTouchStart, { passive: false });
+          window.addEventListener('touchmove', onTouchMove, { passive: false });
+          window.addEventListener('touchend', onTouchEnd, { passive: false });
+          window.addEventListener('touchcancel', onTouchEnd, { passive: false });
+        }
+        function disableTouchLook() {
+          if (!cameraEl) return;
+          cameraEl.setAttribute('look-controls', 'enabled: true');
+          window.removeEventListener('touchstart', onTouchStart);
+          window.removeEventListener('touchmove', onTouchMove);
+          window.removeEventListener('touchend', onTouchEnd);
+          window.removeEventListener('touchcancel', onTouchEnd);
+          touchLookActive = false; touchId = null;
+        }
+
+        function onTouchStart(evt) {
+          if (!mobileMode) return;
+          // ignore touches that start inside joystick area (left side)
+          for (let i = 0; i < evt.touches.length; i++) {
+            const t = evt.touches[i];
+            const rect = joystickWrapper.getBoundingClientRect();
+            if (t.clientX >= rect.left && t.clientX <= rect.right && t.clientY >= rect.top && t.clientY <= rect.bottom) {
+              // touch in joystick area: ignore for look
+              continue;
+            }
+            // use the first non-joystick touch for look
+            touchLookActive = true;
+            touchId = t.identifier;
+            startX = t.clientX;
+            startY = t.clientY;
+            // read current camera rotation (degrees)
+            const rot = cameraEl.getAttribute('rotation') || { x: 0, y: 0, z: 0 };
+            startPitch = rot.x;
+            startYaw = rot.y;
+            // ensure camera pitched parallel to plane on mobile enter
+            cameraEl.setAttribute('rotation', { x: 0, y: startYaw, z: 0 });
+            // prevent page scroll
+            evt.preventDefault();
+            break;
+          }
+        }
+
+        function onTouchMove(evt) {
+          if (!mobileMode || !touchLookActive) return;
+          // find our touch
+          let t = null;
+          for (let i = 0; i < evt.touches.length; i++) {
+            if (evt.touches[i].identifier === touchId) { t = evt.touches[i]; break; }
+          }
+          if (!t) return;
+          const dx = t.clientX - startX;
+          const dy = t.clientY - startY;
+          // compute new yaw/pitch
+          let newYaw = startYaw + dx * SENS_X;
+          let newPitch = startPitch - dy * SENS_Y; // invert: dragging up should look up
+          // clamp pitch to avoid flipping; allow near-full vertical look if desired
+          newPitch = Math.max(-89, Math.min(89, newPitch));
+          // apply rotation to camera entity
+          cameraEl.setAttribute('rotation', { x: newPitch, y: newYaw, z: 0 });
+          evt.preventDefault();
+        }
+
+        function onTouchEnd(evt) {
+          if (!mobileMode) return;
+          // check if our touch ended
+          if (!touchLookActive) return;
+          let stillPresent = false;
+          for (let i = 0; i < evt.touches.length; i++) {
+            if (evt.touches[i].identifier === touchId) { stillPresent = true; break; }
+          }
+          if (!stillPresent) {
+            touchLookActive = false;
+            touchId = null;
+          }
         }
 
         enterMobileBtn.addEventListener('click', () => {
@@ -310,10 +402,18 @@
           joystickWrapper.style.pointerEvents = mobileMode ? 'auto' : 'none';
           if (mobileMode) {
             initJoystick();
+            enableTouchLook();
+            // position camera to look parallel to the plane (pitch 0) while keeping yaw
+            if (cameraEl) {
+              const rot = cameraEl.getAttribute('rotation') || { x: 0, y: 0, z: 0 };
+              cameraEl.setAttribute('rotation', { x: 0, y: rot.y || 0, z: 0 });
+            }
+            // disable wasd to avoid conflicts
             if (cameraEl && cameraEl.hasAttribute('wasd-controls')) {
               cameraEl.setAttribute('wasd-controls', 'enabled: false');
             }
           } else {
+            disableTouchLook();
             move.x = 0; move.y = 0;
             if (cameraEl && cameraEl.hasAttribute('wasd-controls')) {
               cameraEl.setAttribute('wasd-controls', 'enabled: true');
